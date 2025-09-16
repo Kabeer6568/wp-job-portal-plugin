@@ -117,7 +117,7 @@ function wp_job_listing_shortcode($attr) {
         $query->the_post();
         $postID    = get_the_ID();
         $title     = get_the_title();
-        $desc      = has_excerpt() ? get_the_excerpt() : wp_trim_words( get_the_content(), 20 );
+        $desc      = has_excerpt() ? wp_trim_words( get_the_excerpt(), 20 ) : wp_trim_words( get_the_content(), 20 );
         $thumbnail = get_the_post_thumbnail( $postID, 'medium' );
 
         // meta fields
@@ -131,12 +131,13 @@ function wp_job_listing_shortcode($attr) {
         $experience = get_post_meta( $postID, 'experience', true );
 
         $output .= "<div class='job-box'>";
-        $output .= "<h2>" . esc_html( $title ) . "</h2>";
-
         if ( $thumbnail ) {
             // get_the_post_thumbnail() returns safe HTML for images
             $output .= "<div class='thumb'>{$thumbnail}</div>";
         }
+        $output .= "<h2>" . esc_html( $title ) . "</h2>";
+
+        
 
         // allow basic HTML in excerpt/content, otherwise escape
         $output .= "<div class='job-desc'>" . wp_kses_post( $desc ) . "</div>";
