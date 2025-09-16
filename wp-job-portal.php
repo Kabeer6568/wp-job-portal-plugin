@@ -36,4 +36,10 @@ if (! defined('JOB_PORTAL_DB_VERSION')) {
 }
 
 
+
+
+
+
+
 require_once JOB_PORTAL_DIR_PATH . 'inc/plugin.php';
+

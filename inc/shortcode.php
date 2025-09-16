@@ -1,95 +1,5 @@
 <?php
 
-
-// function wp_job_listing_shortcode($attr) {
-
-//     global $post;
-    
-//     $attr = shortcode_atts(
-//         array(
-//             'count'=> 1,
-//         ),
-//         $attr,
-//         'wp_job_listing'
-//     );
-
-//         $arg = array(
-//             'post_type' => 'job_listings',
-//             'post_per_page'=> $attr['count'],
-//             'post_status' => 'publish',
-//         );
-        
-//         $query = new WP_Query($arg);
-
-//         if (!$query->have_posts()) {
-//             return  "<p> NO job found</p>";
-//         }
-
-//         $output = "<div class='job-listings'>";
-
-//         while ($query->have_posts()) {
-//             $query->the_post();
-//             $postID = get_the_ID(); 
-            
-//             $title = get_the_title();
-
-//             $desc = has_excerpt() ? get_the_excerpt() : wp_trim_words( get_the_content(),20 );
-
-//             $thumbnail = get_the_post_thumbnail($postID , 'medium');
-
-//             //Meta Data
-
-//             $position = get_post_meta( $postID, 'position' , true );
-//             $Cname = get_post_meta( $postID, 'company_name' , true );
-//             $location = get_post_meta( $postID, 'location' , true );
-//             $experience = get_post_meta( $postID, 'experience' , true );
-
-//             // $skills = get_object_taxonomies( 'job_listings', 'skills' );
-
-//             //Build single job box
-
-//             $output .= "<div class='job-box'>";
-//             $output .= "<h1>{$title}</h1>";
-//             $output .= "<div class='thumb'>{$thumbnail}</div>";
-//             $output .= "<p>{$desc}</p>";
-
-//             if ($position) {
-//                 $output .= "<p>{$position}</p>";
-//             }
-//             if ($Cname) {
-//                 $output .= "<p>{$Cname}</p>";
-//             }
-//             if ($location) {
-//                 $output .= "<p>{$location}</p>";
-//             }
-//             if ($experience) {
-//                 $output .= "<p>{$experience}</p>";
-//             }
-//             $taxonomies = get_object_taxonomies('job_listings', 'skills');
-//             foreach ($taxonomies as $taxonomy) {
-//                 $terms = get_the_terms($post->ID, $taxonomy);
-//                 if (!empty($terms) && !is_wp_error($terms)) {
-//                     echo '<p><strong>' . ucfirst($taxonomy) . ':</strong> ';
-//                     $term_names = wp_list_pluck($terms, 'skills');
-//                     echo esc_html(implode(', ', $term_names));
-//                     echo '</p>';
-//                 }
-//             }
-
-//             $output .= "</div>";
-
-//         }
-
-//         $output .= "</div>";
-
-//         wp_reset_postdata();
-
-//         return $output;
-
-
-// }
-
-
 function wp_job_listing_shortcode($attr) {
     // normalize attributes
     $attr = shortcode_atts( array(
@@ -189,7 +99,95 @@ function wp_job_listing_shortcode($attr) {
     wp_reset_postdata();
     return $output;
 }
-add_shortcode( 'job_listings', 'wp_job_listing_shortcode' );
 
 
 add_shortcode('wp_job_listing', 'wp_job_listing_shortcode');
+
+
+
+
+function wp_job_filter_shortcode() {
+    
+    ob_start();
+    $search = isset($_GET['s']) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+    $skills = isset($_GET['skills']) ? sanitize_text_field( wp_unslash( $_GET['skills'] ) ) : '';
+
+?>
+
+<form action="" method="get">
+
+    <input type="search" name="s" placeholder = "Search here...." value="<?php echo esc_attr($search); ?>">
+
+    <select name="skills" id="">
+        <option value="">All Skills</option>
+
+        <?php
+        
+            $terms = get_terms(
+                array(
+                    'taxonomy' => 'skills',
+                    'hide_empty' => false,
+                )
+                );
+
+                if (! is_wp_error( $terms) && !empty ($terms)) {
+                    foreach($terms as $term){
+                        echo '<option value="' . esc_attr( $term->slug ) . '"' . selected( $skills, $term->slug, false ) . '>' ;
+                        echo esc_html( $term -> name );
+                        echo '</option>';
+                    }
+                }
+        ?>
+        </select>
+                <button type="submit">Filter</button>
+
+</form>
+
+<?php
+
+
+$args = array(
+    'post_type' => 'job_listings',
+    'post_status' => 'publish',
+    'posts_per_page' => 10,
+);
+
+if ($search !== '') {
+    $args['s'] = $search;
+}
+if ($skills !== '') {
+    $args['tax_query'][] = array(
+        'taxonomy' => 'skills',
+        'field' => 'slug',
+        'terms' => $skills,
+    );
+}
+
+$q = new WP_Query($args);
+
+if ($q->have_posts()) {
+     echo '<div class="job-results">';
+     while ($q->have_posts()) {
+        
+        $q->the_post();
+        $id = get_the_ID();
+
+        echo '<div class="job-item">';
+            echo '<h3>' . get_the_title() . '</h3>';
+            echo get_the_post_thumbnail( $id, 'thumbnail' );
+            echo '<div>' . wp_trim_words( get_the_excerpt() ?: get_the_content(), 18 ) . '</div>';
+            echo '</div>';
+        }
+        echo '</div>';
+    } 
+    else {
+        echo '<p>No jobs found.</p>';
+    }
+
+    wp_reset_postdata();
+    return ob_get_clean();
+
+}
+
+add_shortcode( 'wp_job_filter', 'wp_job_filter_shortcode' );
+
